@@ -1,0 +1,16 @@
+# NexusLLM Helm Chart
+apiVersion: v2
+name: nexusllm
+description: Distributed LLM Inference Platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - llm
+  - distributed
+  - inference
+  - p2p
+  - ai
+maintainers:
+  - name: NexusLLM Team
+    email: team@nexusllm.network

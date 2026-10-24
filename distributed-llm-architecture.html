@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusLLM - Distributed LLM Compute Platform Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot {
+      width: 12px; height: 12px; background: #22d3ee;
+      border-radius: 50%; animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem; border: 1px solid #1e293b;
+      padding: 1.5rem; overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 1300px; display: block; }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem; margin-top: 2rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem; border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card-dot.orange { background: #fb923c; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>NexusLLM Architecture</h1>
+      </div>
+      <p class="subtitle">Distributed LLM Inference Platform — Home Desktop Compute Network</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1350 900">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrowhead-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- =================================================================
+             GLOBAL REGION: NEXUS ORCHESTRATOR CLOUD
+             ================================================================= -->
+        <rect x="20" y="20" width="1310" height="200" rx="12" fill="rgba(120, 53, 15, 0.03)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="35" y="40" fill="#fbbf24" font-size="11" font-weight="600">☁ NEXUS ORCHESTRATOR LAYER (Cloud Control Plane)</text>
+
+        <!-- API Gateway -->
+        <rect x="40" y="60" width="180" height="70" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="130" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">API Gateway</text>
+        <text x="130" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">REST + WebSocket</text>
+        <text x="130" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Rate Limit / Auth</text>
+
+        <!-- Scheduler / Orchestrator -->
+        <rect x="250" y="60" width="200" height="70" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="350" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">Task Scheduler</text>
+        <text x="350" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">DAG Planner</text>
+        <text x="350" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Load Balancer</text>
+
+        <!-- Model Registry -->
+        <rect x="480" y="60" width="180" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="570" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">Model Registry</text>
+        <text x="570" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">Shard Manifests</text>
+        <text x="570" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Version Control</text>
+
+        <!-- Worker Registry / Discovery -->
+        <rect x="690" y="60" width="180" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="780" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">Worker Registry</text>
+        <text x="780" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">Heartbeat Tracker</text>
+        <text x="780" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Capability Index</text>
+
+        <!-- Incentive / Settlement Engine -->
+        <rect x="900" y="60" width="180" height="70" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="990" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">Settlement Engine</text>
+        <text x="990" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">Proof-of-Compute</text>
+        <text x="990" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Token Rewards</text>
+
+        <!-- Observability -->
+        <rect x="1110" y="60" width="180" height="70" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1200" y="85" fill="white" font-size="11" font-weight="600" text-anchor="middle">Observability</text>
+        <text x="1200" y="101" fill="#94a3b8" font-size="8" text-anchor="middle">Metrics / Traces</text>
+        <text x="1200" y="113" fill="#94a3b8" font-size="8" text-anchor="middle">Grafana / Tempo</text>
+
+        <!-- Message Bus (between orchestrator components) -->
+        <rect x="40" y="150" width="1250" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="665" y="175" fill="#fb923c" font-size="10" font-weight="600" text-anchor="middle">Message Bus: NATS JetStream / Kafka — Task Dispatch, Heartbeats, Shard Coordination, Settlement Events</text>
+
+        <!-- Arrows: API Gateway → Scheduler -->
+        <line x1="220" y1="95" x2="248" y2="95" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- Scheduler → Model Registry -->
+        <line x1="450" y1="95" x2="478" y2="95" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- Scheduler → Worker Registry -->
+        <line x1="450" y1="95" x2="688" y2="95" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <!-- Scheduler → Settlement -->
+        <line x1="450" y1="95" x2="898" y2="95" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrowhead-dashed)" stroke-dasharray="5,5"/>
+        <!-- Scheduler → Observability -->
+        <line x1="450" y1="95" x2="1108" y2="95" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowhead-amber)"/>
+
+        <!-- =================================================================
+             GLOBAL REGION: DISTRIBUTED WORKER NODES (Home Desktops)
+             ================================================================= -->
+        <rect x="20" y="240" width="1310" height="620" rx="12" fill="rgba(8, 51, 68, 0.02)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="35" y="260" fill="#22d3ee" font-size="11" font-weight="600">🖥 WORKER NODE LAYER (Home Desktops — P2P Mesh via libp2p / WebRTC)</text>
+
+        <!-- WORKER NODE 1 (High-End GPU) -->
+        <rect x="40" y="290" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="70" y="312" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #1 — RTX 4090 (24GB VRAM)</text>
+        <text x="70" y="328" fill="#94a3b8" font-size="7">OS: Windows/Linux • Runtime: Rust + WASM • Network: libp2p + WebRTC</text>
+
+        <!-- Node 1 Components -->
+        <rect x="50" y="340" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="135" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Nexus Agent</text>
+        <text x="135" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">Heartbeat / Metrics</text>
+
+        <rect x="240" y="340" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="325" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Shard Executor</text>
+        <text x="325" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">cuda / metal / vulkan</text>
+
+        <rect x="50" y="405" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="135" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="135" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">NVMe / RAM Disk</text>
+
+        <rect x="240" y="405" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="325" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">TEE / SGX</text>
+        <text x="325" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">Attestation</text>
+
+        <rect x="50" y="470" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="230" y="493" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: GossipSub (discovery) + WebRTC DataChannels (shard data)</text>
+
+        <!-- WORKER NODE 2 (Mid-Range) -->
+        <rect x="470" y="290" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="312" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #2 — RTX 3080 (10GB VRAM)</text>
+        <text x="500" y="328" fill="#94a3b8" font-size="7">OS: Linux • Runtime: Python + CUDA • Network: libp2p</text>
+
+        <rect x="480" y="340" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="565" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Nexus Agent</text>
+        <text x="565" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">Heartbeat / Metrics</text>
+
+        <rect x="670" y="340" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="755" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Shard Executor</text>
+        <text x="755" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">Partial Layers</text>
+
+        <rect x="480" y="405" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="565" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="565" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">System RAM + VRAM</text>
+
+        <rect x="670" y="405" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="755" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">TEE / SGX</text>
+        <text x="755" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">Remote Attest</text>
+
+        <rect x="480" y="470" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="660" y="493" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: GossipSub + WebRTC</text>
+
+        <!-- WORKER NODE 3 (Apple Silicon) -->
+        <rect x="900" y="290" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="930" y="312" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #3 — M3 Max (48GB Unified)</text>
+        <text x="930" y="328" fill="#94a3b8" font-size="7">OS: macOS • Runtime: Metal / MLX • Network: libp2p</text>
+
+        <rect x="910" y="340" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="995" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Nexus Agent</text>
+        <text x="995" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">Heartbeat / Metrics</text>
+
+        <rect x="1100" y="340" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1185" y="362" fill="white" font-size="10" font-weight="600" text-anchor="middle">Shard Executor</text>
+        <text x="1185" y="376" fill="#94a3b8" font-size="7" text-anchor="middle">MLX / Metal</text>
+
+        <rect x="910" y="405" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="995" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="995" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">Unified Memory</text>
+
+        <rect x="1100" y="405" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1185" y="427" fill="white" font-size="10" font-weight="600" text-anchor="middle">Secure Enclave</text>
+        <text x="1185" y="441" fill="#94a3b8" font-size="7" text-anchor="middle">Attestation</text>
+
+        <rect x="910" y="470" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="1090" y="493" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: GossipSub + WebRTC</text>
+
+        <!-- WORKER NODE 4 (CPU-only / Low-End) -->
+        <rect x="40" y="570" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="70" y="592" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #4 — CPU Only (AVX2 / AMX)</text>
+        <text x="70" y="608" fill="#94a3b8" font-size="7">OS: Linux • Runtime: WASM / llama.cpp • Quant: GGUF 4-bit</text>
+
+        <rect x="50" y="620" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="135" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">Nexus Agent</text>
+        <text x="135" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">Heartbeat / Metrics</text>
+
+        <rect x="240" y="620" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="325" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">Shard Executor</text>
+        <text x="325" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">llama.cpp / WASM</text>
+
+        <rect x="50" y="685" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="135" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="135" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">System RAM</text>
+
+        <rect x="240" y="685" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="325" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">SGX / TDX</text>
+        <text x="325" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">Attestation</text>
+
+        <rect x="50" y="750" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="230" y="773" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: GossipSub + WebRTC (relay-assisted)</text>
+
+        <!-- WORKER NODE 5 (Aggregator / Coordinator Node) -->
+        <rect x="470" y="570" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="500" y="592" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #5 — Coordinator (RTX 4080)</text>
+        <text x="500" y="608" fill="#94a3b8" font-size="7">Role: Pipeline Coordinator • KV Cache Aggregator</text>
+
+        <rect x="480" y="620" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="565" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">Coordinator Agent</text>
+        <text x="565" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">Pipeline Control</text>
+
+        <rect x="670" y="620" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="755" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">KV Aggregator</text>
+        <text x="755" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">Cross-Node KV</text>
+
+        <rect x="480" y="685" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="565" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="565" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">Hot Shards</text>
+
+        <rect x="670" y="685" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="755" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">TEE / SGX</text>
+        <text x="755" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">Attestation</text>
+
+        <rect x="480" y="750" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="660" y="773" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: GossipSub + WebRTC (low-latency path)</text>
+
+        <!-- WORKER NODE 6 (Edge / Mobile) -->
+        <rect x="900" y="570" width="400" height="260" rx="8" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="930" y="592" fill="#22d3ee" font-size="10" font-weight="600">Worker Node #6 — Mobile / Edge (NPU)</text>
+        <text x="930" y="608" fill="#94a3b8" font-size="7">OS: Android/iOS • Runtime: ExecuTorch / CoreML • Quant: 4-bit</text>
+
+        <rect x="910" y="620" width="170" height="50" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="995" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">Nexus Agent</text>
+        <text x="995" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">Heartbeat / Metrics</text>
+
+        <rect x="1100" y="620" width="170" height="50" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="1185" y="642" fill="white" font-size="10" font-weight="600" text-anchor="middle">Shard Executor</text>
+        <text x="1185" y="656" fill="#94a3b8" font-size="7" text-anchor="middle">NPU / GPU</text>
+
+        <rect x="910" y="685" width="170" height="50" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="995" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">Model Cache</text>
+        <text x="995" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">Flash / RAM</text>
+
+        <rect x="1100" y="685" width="170" height="50" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1185" y="707" fill="white" font-size="10" font-weight="600" text-anchor="middle">TrustZone</text>
+        <text x="1185" y="721" fill="#94a3b8" font-size="7" text-anchor="middle">Attestation</text>
+
+        <rect x="910" y="750" width="360" height="50" rx="6" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="1090" y="773" fill="#fb923c" font-size="8" text-anchor="middle">P2P Mesh: libp2p + WebRTC (NAT traversal)</text>
+
+        <!-- =================================================================
+             CONNECTIONS: ORCHESTRATOR ↔ WORKER NODES
+             ================================================================= -->
+        <!-- API Gateway → Worker 1 -->
+        <path d="M 130 220 L 130 240 Q 130 260 240 260 L 240 290" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="180" y="250" fill="#22d3ee" font-size="7">Task Dispatch</text>
+
+        <!-- Scheduler → Worker 2 -->
+        <path d="M 350 220 L 350 240 Q 350 260 670 260 L 670 290" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="510" y="250" fill="#22d3ee" font-size="7">Shard Assign</text>
+
+        <!-- Model Registry → Worker 3 -->
+        <path d="M 570 220 L 570 240 Q 570 260 1100 260 L 1100 290" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="835" y="250" fill="#a78bfa" font-size="7">Shard Manifest</text>
+
+        <!-- Worker Registry ↔ Workers (heartbeats) -->
+        <path d="M 780 220 L 780 240 Q 780 260 135 260 L 135 570" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="450" y="255" fill="#34d399" font-size="7">Heartbeat / Capability</text>
+
+        <!-- Settlement → Workers (rewards) -->
+        <path d="M 990 220 L 990 240 Q 990 260 325 260 L 325 570" fill="none" stroke="#fb7185" stroke-width="1" stroke-dasharray="5,5" marker-end="url(#arrowhead-dashed)"/>
+        <text x="650" y="255" fill="#fb7185" font-size="7">Rewards / Settlement</text>
+
+        <!-- Observability → Workers -->
+        <path d="M 1200 220 L 1200 240 Q 1200 260 1185 260 L 1185 570" fill="none" stroke="#fb923c" stroke-width="1" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="1190" y="255" fill="#fb923c" font-size="7">Metrics / Traces</text>
+
+        <!-- =================================================================
+             P2P MESH CONNECTIONS (Inter-Worker)
+             ================================================================= -->
+        <!-- Worker 1 ↔ Worker 2 (shard pipeline) -->
+        <path d="M 440 365 L 470 365" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="455" y="360" fill="#fb923c" font-size="7">KV Cache</text>
+
+        <!-- Worker 2 ↔ Worker 5 (coordinator) -->
+        <path d="M 670 405 L 670 570" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="685" y="490" fill="#a78bfa" font-size="7">Pipeline Sync</text>
+
+        <!-- Worker 1 ↔ Worker 5 -->
+        <path d="M 240 405 L 240 570" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="225" y="490" fill="#a78bfa" font-size="7">Shard Data</text>
+
+        <!-- Worker 3 ↔ Worker 5 -->
+        <path d="M 1100 405 L 1100 570" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="1115" y="490" fill="#a78bfa" font-size="7">Shard Data</text>
+
+        <!-- Worker 4 → Worker 5 (CPU offload) -->
+        <path d="M 325 685 L 325 700 Q 325 720 565 720 L 565 620" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="445" y="715" fill="#34d399" font-size="7">Offload</text>
+
+        <!-- Worker 6 → Worker 5 (edge offload) -->
+        <path d="M 1100 685 L 1100 700 Q 1100 720 755 720 L 755 620" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <text x="925" y="715" fill="#34d399" font-size="7">Offload</text>
+
+        <!-- =================================================================
+             SECURITY BOUNDARIES
+             ================================================================= -->
+        <!-- TEE Boundary around each worker's secure components -->
+        <rect x="235" y="400" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="242" y="414" fill="#fb7185" font-size="7">TEE Boundary</text>
+
+        <rect x="665" y="400" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="672" y="414" fill="#fb7185" font-size="7">TEE Boundary</text>
+
+        <rect x="1095" y="400" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="1102" y="414" fill="#fb7185" font-size="7">Secure Enclave</text>
+
+        <rect x="235" y="680" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="242" y="694" fill="#fb7185" font-size="7">TDX/SGX</text>
+
+        <rect x="665" y="680" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="672" y="694" fill="#fb7185" font-size="7">TEE Boundary</text>
+
+        <rect x="1095" y="680" width="180" height="60" rx="8" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="1102" y="694" fill="#fb7185" font-size="7">TrustZone</text>
+
+        <!-- =================================================================
+             LEGEND
+             ================================================================= -->
+        <text x="25" y="880" fill="white" font-size="10" font-weight="600">Legend</text>
+
+        <rect x="25" y="890" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="47" y="898" fill="#94a3b8" font-size="8">Worker Node / Frontend</text>
+
+        <rect x="200" y="890" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="222" y="898" fill="#94a3b8" font-size="8">Agent / Coordinator</text>
+
+        <rect x="380" y="890" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="402" y="898" fill="#94a3b8" font-size="8">Shard Executor / Model</text>
+
+        <rect x="580" y="890" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="602" y="898" fill="#94a3b8" font-size="8">Cache / Cloud Service</text>
+
+        <rect x="760" y="890" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="782" y="898" fill="#94a3b8" font-size="8">TEE / Security / Settlement</text>
+
+        <rect x="980" y="890" width="16" height="10" rx="2" fill="rgba(251, 146, 60, 0.2)" stroke="#fb923c" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="1002" y="898" fill="#94a3b8" font-size="8">P2P Mesh / Message Bus</text>
+
+        <line x1="25" y1="910" x2="41" y2="910" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="47" y="913" fill="#94a3b8" font-size="8">Control Plane</text>
+
+        <line x1="200" y1="910" x2="216" y2="910" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-dashed)"/>
+        <text x="222" y="913" fill="#94a3b8" font-size="8">Auth / Settlement Flow</text>
+
+        <line x1="380" y1="910" x2="396" y2="910" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead-amber)"/>
+        <text x="402" y="913" fill="#94a3b8" font-size="8">P2P Data Plane</text>
+
+        <rect x="580" y="904" width="16" height="10" rx="2" fill="transparent" stroke="#fb7185" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="602" y="913" fill="#94a3b8" font-size="8">TEE Boundary</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>🖥 Worker Node Architecture</h3>
+        </div>
+        <ul>
+          <li>• Nexus Agent: Lightweight daemon (Rust/WASM) managing lifecycle, heartbeats, attestation</li>
+          <li>• Shard Executor: Hardware-accelerated inference engine (CUDA/Metal/Vulkan/WASM/llama.cpp)</li>
+          <li>• Model Cache: Tiered storage (VRAM → Unified RAM → NVMe → Network) with prefetch</li>
+          <li>• TEE/SGX/TrustZone: Hardware attestation for proof-of-compute & data privacy</li>
+          <li>• P2P Stack: libp2p (GossipSub discovery) + WebRTC DataChannels (low-latency shard transfer)</li>
+          <li>• Quantization: GGUF 4-bit, AWQ, GPTQ, INT8 — auto-selected per device capability</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>☁ Orchestrator Control Plane</h3>
+        </div>
+        <ul>
+          <li>• API Gateway: REST + WebSocket, JWT auth, rate limiting, request routing</li>
+          <li>• Task Scheduler: DAG-based pipeline planner, heterogeneous device awareness</li>
+          <li>• Model Registry: Versioned shard manifests, compatibility matrix, delta updates</li>
+          <li>• Worker Registry: Real-time capability index (VRAM, compute, network, TEE status)</li>
+          <li>• Settlement Engine: ZK-proof-of-compute verification, token rewards, slashing</li>
+          <li>• Observability: OpenTelemetry → Tempo/Grafana, distributed tracing across nodes</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>🔀 Model Sharding & Pipeline</h3>
+        </div>
+        <ul>
+          <li>• Pipeline Parallelism: Sequential layer groups across nodes (minimize KV transfer)</li>
+          <li>• Tensor Parallelism: Intra-layer split (attention heads, MLP) for high-VRAM nodes</li>
+          <li>• Expert Parallelism: MoE routing to specialized worker subsets</li>
+          <li>• KV Cache Aggregation: Coordinator node merges cross-node KV for attention</li>
+          <li>• Speculative Decoding: Small model on edge → large model verification on GPU nodes</li>
+          <li>• Dynamic Resharding: Runtime rebalancing based on node churn/performance</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>🔐 Security & Trust Model</h3>
+        </div>
+        <ul>
+          <li>• Remote Attestation: Intel SGX / AMD SEV / Apple Secure Enclave / ARM TrustZone</li>
+          <li>• Proof-of-Compute: ZK-SNARKs over execution trace + TEE quote verification</li>
+          <li>• Data Privacy: Input/output encryption via TEE-derived keys, never plaintext on host</li>
+          <li>• Sybil Resistance: Stake-weighted registration, hardware-bound identity (TPM/HSM)</li>
+          <li>• Network Security: Noise protocol (libp2p), DTLS 1.3 for WebRTC, mutual TLS</li>
+          <li>• Audit Trail: Immutable log of task assignments, results, settlements on-chain</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>💰 Incentive & Economics</h3>
+        </div>
+        <ul>
+          <li>• Compute Credits: ERC-20 / SPL token for inference requests (pay-per-token)</li>
+          <li>• Reward Formula: Base reward × (quality_score × uptime × capability_multiplier)</li>
+          <li>• Quality Score: Verified via redundant execution + challenge-response sampling</li>
+          <li>• Slashing: Failed attestation, incorrect output, downtime → stake reduction</li>
+          <li>• Delegation: Token holders stake to operators, share rewards (liquid staking)</li>
+          <li>• Market Making: Automated pricing based on supply/demand, model size, latency SLA</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot orange"></div>
+          <h3>🌐 Networking & P2P Topology</h3>
+        </div>
+        <ul>
+          <li>• Discovery: libp2p GossipSub + mDNS (LAN) + DHT (WAN) + bootstrap nodes</li>
+          <li>• NAT Traversal: ICE/STUN/TURN + WebRTC DataChannels (hole punching)</li>
+          <li>• Relay Nodes: Incentivized high-bandwidth nodes for NATed peers</li>
+          <li>• Topology: Hierarchical — Coordinators form backbone, workers attach as leaves</li>
+          <li>• Bandwidth: Adaptive bitrate, delta compression for KV cache, QUIC transport</li>
+          <li>• Resilience: Multi-path routing, automatic failover, graceful degradation</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      NexusLLM Distributed LLM Compute Platform • Architecture v1.0 • Designed for heterogeneous home desktop clusters
+    </p>
+  </div>
+</body>
+</html>

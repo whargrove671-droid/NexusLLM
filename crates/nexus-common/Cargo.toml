@@ -1,0 +1,32 @@
+[package]
+name = "nexus-common"
+version = "0.1.0"
+edition = "2021"
+description = "Shared types and utilities for NexusLLM"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusllm/nexusllm"
+
+[dependencies]
+nexus-proto = { path = "../nexus-proto" }
+
+tokio = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+zeroize = { workspace = true }
+ed25519-dalek = { workspace = true }
+hmac = "0.12"
+sha2 = { workspace = true }
+rand = { workspace = true }
+prost = { workspace = true }
+candle-core = { workspace = true }
+candle-nn = { workspace = true }
+metrics = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

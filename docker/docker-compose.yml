@@ -1,0 +1,268 @@
+# NexusLLM Docker Compose for Local Development
+
+version: '3.8'
+
+services:
+  # Orchestrator API Gateway
+  api-gateway:
+    build:
+      context: ../orchestrator/api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - RUST_LOG=info
+      - NEXUS_WORKER_REGISTRY_URL=http://worker-registry:8081
+      - NEXUS_MODEL_REGISTRY_URL=http://model-registry:8082
+      - NEXUS_SCHEDULER_URL=http://scheduler:8083
+      - NEXUS_SETTLEMENT_URL=http://settlement:8084
+      - NEXUS_OTEL_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - worker-registry
+      - model-registry
+      - scheduler
+      - settlement
+      - jaeger
+    networks:
+      - nexus-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Worker Registry Service
+  worker-registry:
+    build:
+      context: ../orchestrator/worker-registry
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - RUST_LOG=info
+      - NEXUS_DB_URL=postgres://nexus:nexus@postgres:5432/nexus
+      - NEXUS_REDIS_URL=redis://redis:6379
+      - NEXUS_OTEL_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+      - redis
+      - jaeger
+    networks:
+      - nexus-network
+
+  # Model Registry Service
+  model-registry:
+    build:
+      context: ../orchestrator/model-registry
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - RUST_LOG=info
+      - NEXUS_IPFS_API=/ip4/ipfs/tcp/5001
+      - NEXUS_CDN_BASE_URL=https://cdn.nexusllm.network
+      - NEXUS_DB_URL=postgres://nexus:nexus@postgres:5432/nexus
+      - NEXUS_OTEL_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - ipfs
+      - postgres
+      - jaeger
+    networks:
+      - nexus-network
+    volumes:
+      - model-cache:/data/models
+
+  # Scheduler Service
+  scheduler:
+    build:
+      context: ../orchestrator/scheduler
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - RUST_LOG=info
+      - NEXUS_WORKER_REGISTRY_URL=http://worker-registry:8081
+      - NEXUS_MODEL_REGISTRY_URL=http://model-registry:8082
+      - NEXUS_OTEL_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - worker-registry
+      - model-registry
+      - jaeger
+    networks:
+      - nexus-network
+
+  # Settlement Service
+  settlement:
+    build:
+      context: ../orchestrator/settlement
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - RUST_LOG=info
+      - NEXUS_ETHEREUM_RPC=https://arb1.arbitrum.io/rpc
+      - NEXUS_CONTRACT_ADDRESS=0x...
+      - NEXUS_DB_URL=postgres://nexus:nexus@postgres:5432/nexus
+      - NEXUS_OTEL_ENDPOINT=http://jaeger:4317
+    depends_on:
+      - postgres
+      - jaeger
+    networks:
+      - nexus-network
+
+  # IPFS for model storage
+  ipfs:
+    image: ipfs/kubo:v0.28.0
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs-data:/data/ipfs
+    networks:
+      - nexus-network
+
+  # PostgreSQL for persistent state
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=nexus
+      - POSTGRES_PASSWORD=nexus
+      - POSTGRES_DB=nexus
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and pub/sub
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - nexus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+    volumes:
+      - jaeger-data:/var/lib/jaeger
+    networks:
+      - nexus-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - nexus-network
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - nexus-network
+
+  # Worker node (example with GPU)
+  worker-gpu:
+    build:
+      context: ../docker/worker
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - NEXUS_ORCHESTRATOR_URL=ws://api-gateway:8080
+      - NEXUS_MODEL_CACHE_DIR=/home/nexus/model_cache
+      - NEXUS_TEE_ENABLED=false
+      - NEXUS_HEARTBEAT_INTERVAL_SECS=10
+      - NEXUS_LOG_LEVEL=debug
+      - NEXUS_METRICS_PORT=9090
+    volumes:
+      - worker-cache:/home/nexus/model_cache
+      - ./config/worker.toml:/home/nexus/config.toml:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - nexus-network
+    # For local testing without GPU, use worker-cpu instead
+
+  # Worker node (CPU only for testing)
+  worker-cpu:
+    build:
+      context: ../docker/worker
+      dockerfile: Dockerfile.cpu
+    environment:
+      - NEXUS_ORCHESTRATOR_URL=ws://api-gateway:8080
+      - NEXUS_MODEL_CACHE_DIR=/home/nexus/model_cache
+      - NEXUS_TEE_ENABLED=false
+      - NEXUS_HEARTBEAT_INTERVAL_SECS=10
+      - NEXUS_LOG_LEVEL=debug
+      - NEXUS_METRICS_PORT=9090
+    volumes:
+      - worker-cache:/home/nexus/model_cache
+      - ./config/worker.toml:/home/nexus/config.toml:ro
+    depends_on:
+      - api-gateway
+    networks:
+      - nexus-network
+
+networks:
+  nexus-network:
+    driver: bridge
+
+volumes:
+  ipfs-data:
+  postgres-data:
+  redis-data:
+  jaeger-data:
+  prometheus-data:
+  grafana-data:
+  model-cache:
+  worker-cache:

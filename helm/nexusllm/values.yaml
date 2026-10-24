@@ -1,0 +1,320 @@
+# NexusLLM Helm Values
+
+global:
+  imageRegistry: "ghcr.io/nexusllm"
+  imagePullSecrets: []
+  logLevel: "info"
+  otelEndpoint: "http://jaeger:4317"
+
+# Orchestrator API Gateway
+apiGateway:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: api-gateway
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+    metricsPort: 9090
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: api.nexusllm.network
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-gateway-tls
+        hosts:
+          - api.nexusllm.network
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    NEXUS_WORKER_REGISTRY_URL: "http://worker-registry:8081"
+    NEXUS_MODEL_REGISTRY_URL: "http://model-registry:8082"
+    NEXUS_SCHEDULER_URL: "http://scheduler:8083"
+    NEXUS_SETTLEMENT_URL: "http://settlement:8084"
+
+# Worker Registry
+workerRegistry:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: worker-registry
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8081
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    NEXUS_DB_URL: "postgres://nexus:nexus@postgres:5432/nexus"
+    NEXUS_REDIS_URL: "redis://redis:6379"
+
+# Model Registry
+modelRegistry:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: model-registry
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8082
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    NEXUS_IPFS_API: "/ip4/ipfs/tcp/5001"
+    NEXUS_CDN_BASE_URL: "https://cdn.nexusllm.network"
+    NEXUS_DB_URL: "postgres://nexus:nexus@postgres:5432/nexus"
+
+# Scheduler
+scheduler:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: scheduler
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8083
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    NEXUS_WORKER_REGISTRY_URL: "http://worker-registry:8081"
+    NEXUS_MODEL_REGISTRY_URL: "http://model-registry:8082"
+
+# Settlement
+settlement:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: settlement
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8084
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    NEXUS_ETHEREUM_RPC: "https://arb1.arbitrum.io/rpc"
+    NEXUS_CONTRACT_ADDRESS: "0x..."
+    NEXUS_DB_URL: "postgres://nexus:nexus@postgres:5432/nexus"
+
+# IPFS
+ipfs:
+  enabled: true
+  image:
+    repository: ipfs/kubo
+    tag: "v0.28.0"
+  service:
+    type: ClusterIP
+    ports:
+      - name: swarm
+        port: 4001
+      - name: api
+        port: 5001
+      - name: gateway
+        port: 8080
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: "fast-ssd"
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    username: nexus
+    password: nexus
+    database: nexus
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+# Redis
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Jaeger
+jaeger:
+  enabled: true
+  image:
+    repository: jaegertracing/all-in-one
+    tag: "1.53"
+  service:
+    type: ClusterIP
+    ports:
+      - name: otlp-grpc
+        port: 4317
+      - name: otlp-http
+        port: 4318
+      - name: query
+        port: 16686
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "fast-ssd"
+
+# Prometheus
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 50Gi
+      storageClass: "fast-ssd"
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    retention: "30d"
+    retentionSize: "50GB"
+
+# Grafana
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: "10.4.0"
+  admin:
+    existingSecret: "grafana-admin"
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "fast-ssd"
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-server:80
+          access: proxy
+          isDefault: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'NexusLLM'
+          orgId: 1
+          folder: 'NexusLLM'
+          type: file
+          disableDeletion: false
+          updateIntervalMinutes: 10
+          allowUiUpdates: true
+          options:
+            path: /var/lib/grafana/dashboards/nexusllm
+
+# Worker DaemonSet (for GPU nodes)
+workerDaemonSet:
+  enabled: true
+  image:
+    repository: nexus-agent
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+      cpu: "4"
+      memory: "32Gi"
+    requests:
+      nvidia.com/gpu: 1
+      cpu: "2"
+      memory: "16Gi"
+  env:
+    NEXUS_ORCHESTRATOR_URL: "ws://api-gateway:8080"
+    NEXUS_MODEL_CACHE_DIR: "/model_cache"
+    NEXUS_TEE_ENABLED: "true"
+    NEXUS_HEARTBEAT_INTERVAL_SECS: "10"
+    NEXUS_LOG_LEVEL: "info"
+    NEXUS_METRICS_PORT: "9090"
+  volumes:
+    - name: model-cache
+      persistentVolumeClaim:
+        claimName: model-cache-pvc
+  volumeMounts:
+    - name: model-cache
+      mountPath: /model_cache
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+  nodeSelector:
+    nvidia.com/gpu: "true"
+
+# Model Cache PVC
+modelCachePVC:
+  enabled: true
+  storageClass: "fast-ssd"
+  size: 500Gi
+  accessModes:
+    - ReadWriteMany
+
+# Network Policies
+networkPolicies:
+  enabled: true
+
+# Pod Security Policies
+podSecurityPolicies:
+  enabled: true

@@ -1,0 +1,121 @@
+NexusLLM License
+================
+
+Version 1.0 — Effective October 24, 2026
+
+Copyright (c) 2026 NexusLLM Contributors
+
+This license governs the use of the NexusLLM Distributed LLM Compute Platform
+(including all source code, documentation, configuration files, architecture
+diagrams, and associated artifacts — collectively "the Software").
+
+──────────────────────────────────────────────────────────────────────────────
+1. FREE NON-COMMERCIAL USE
+──────────────────────────────────────────────────────────────────────────────
+
+You are granted a worldwide, royalty-free, perpetual, non-exclusive license to:
+
+• Use, copy, modify, and distribute the Software for any **non-commercial** purpose,
+  including research, education, personal projects, open-source development,
+  benchmarking, and internal evaluation.
+
+• Create derivative works and distribute them under the same terms.
+
+"Non-commercial" means not for monetary compensation, not as part of a paid
+service, not embedded in a product sold or licensed to third parties, and not
+used to generate revenue directly or indirectly.
+
+──────────────────────────────────────────────────────────────────────────────
+2. COMMERCIAL USE — ROYALTY OBLIGATION
+──────────────────────────────────────────────────────────────────────────────
+
+Any **commercial use** of the Software requires payment of a **20% royalty** on
+Net Commercial Revenue attributable to the Software.
+
+2.1 Definition of Commercial Use
+   Commercial use includes, but is not limited to:
+   • Offering inference-as-a-service, APIs, or hosted solutions using the Software
+   • Embedding the Software in proprietary products or services sold to customers
+   • Using the Software to reduce infrastructure costs in a for-profit operation
+   • Reselling compute capacity orchestrated by the Software
+   • Any use where the Software contributes to revenue generation
+
+2.2 Royalty Calculation
+   • Royalty Rate: 20% (twenty percent)
+   • Base: Net Commercial Revenue = Gross Revenue − Direct Costs
+     – Direct Costs include: electricity, hardware depreciation, bandwidth,
+       third-party cloud fees, payment processing fees
+     – Direct Costs do NOT include: R&D, salaries, marketing, overhead
+   • Attribution: Revenue is attributable to the Software if the Software
+     performs any part of the inference pipeline, scheduling, settlement,
+     or orchestration for the commercial workload
+
+2.3 Payment Terms
+   • Reports and payments due quarterly (within 30 days of quarter end)
+   • Minimum annual royalty: $10,000 USD (creditable against actual royalties)
+   • Payable in USD or equivalent cryptocurrency (NEXUS token at 30-day VWAP)
+   • Late payments accrue interest at 1.5% per month
+
+2.4 Audit Rights
+   Licensor may audit Licensee's books annually with 30 days' notice to verify
+   royalty calculations. If underpayment exceeds 5%, Licensee bears audit costs.
+
+──────────────────────────────────────────────────────────────────────────────
+3. ATTRIBUTION REQUIREMENTS
+──────────────────────────────────────────────────────────────────────────────
+
+All distributions (source or binary) must retain:
+• This license text in full
+• Copyright notice: "Copyright (c) 2026 NexusLLM Contributors"
+• Attribution: "Powered by NexusLLM — https://nexusllm.network"
+• In binary distributions: accessible via "About" dialog, CLI `--version`,
+  or API `/version` endpoint
+
+──────────────────────────────────────────────────────────────────────────────
+4. PATENT GRANT
+──────────────────────────────────────────────────────────────────────────────
+
+Each contributor grants a perpetual, worldwide, royalty-free patent license
+for their essential patent claims to make, use, sell, and distribute the
+Software. This grant terminates if you assert patent claims against the
+Software or its users.
+
+──────────────────────────────────────────────────────────────────────────────
+5. DISCLAIMER OF WARRANTY
+──────────────────────────────────────────────────────────────────────────────
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM USE OF THE SOFTWARE.
+
+──────────────────────────────────────────────────────────────────────────────
+6. TERMINATION
+──────────────────────────────────────────────────────────────────────────────
+
+This license terminates automatically if you breach any term. Upon termination:
+• Commercial users must cease use and pay accrued royalties
+• Non-commercial users must destroy all copies
+• Sections 3, 5, 6, 7 survive termination
+
+──────────────────────────────────────────────────────────────────────────────
+7. GOVERNING LAW & DISPUTE RESOLUTION
+──────────────────────────────────────────────────────────────────────────────
+
+• Governing Law: State of Delaware, USA (without conflict-of-law principles)
+• Disputes: Binding arbitration (JAMS rules) in Wilmington, DE
+• Language: English
+• Prevailing party recovers attorneys' fees and costs
+
+──────────────────────────────────────────────────────────────────────────────
+8. CONTACT FOR COMMERCIAL LICENSING
+──────────────────────────────────────────────────────────────────────────────
+
+To discuss commercial terms, volume discounts, or enterprise support:
+
+   Email: licensing@nexusllm.network
+   Web:   https://nexusllm.network/enterprise
+
+──────────────────────────────────────────────────────────────────────────────
+SPDX-License-Identifier: LicenseRef-NexusLLM-1.0

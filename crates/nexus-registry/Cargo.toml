@@ -1,0 +1,26 @@
+[package]
+name = "nexus-registry"
+version = "0.1.0"
+edition = "2021"
+description = "Model and Worker registry for NexusLLM"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusllm/nexusllm"
+
+[dependencies]
+nexus-common = { path = "../nexus-common" }
+nexus-proto = { path = "../nexus-proto" }
+
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+ipfs-api = { version = "0.5", optional = true }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+wiremock = { workspace = true }

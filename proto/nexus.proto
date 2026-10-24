@@ -1,0 +1,615 @@
+syntax = "proto3";
+
+package nexus.v1;
+
+option go_package = "github.com/nexusllm/nexusllm/proto/go/nexus/v1";
+
+// ============================================================
+// Core Types
+// ============================================================
+
+message HardwareIdentity {
+  string peer_id = 1;                    // libp2p PeerId (base58)
+  bytes tpm_ek_pub = 2;                  // TPM Endorsement Key (DER)
+  bytes hardware_fingerprint = 3;        // CPU/GPU serial + MAC hash
+  string tee_type = 4;                   // "sgx", "sev", "trustzone", "secure_enclave", "none"
+  bytes tee_measurement = 5;             // MRENCLAVE / SEV measurement
+  uint64 timestamp = 6;                  // Registration timestamp
+  bytes signature = 7;                   // Signed by TPM/HSM over above fields
+}
+
+message DeviceCapabilities {
+  // Compute
+  repeated ComputeDevice compute_devices = 1;
+  uint32 cpu_cores = 2;
+  string cpu_arch = 3;                   // "x86_64", "aarch64", "riscv64"
+  repeated string cpu_features = 4;      // "avx2", "avx512", "amx", "neon", "sve"
+
+  // Memory
+  uint64 system_ram_bytes = 10;
+  uint64 swap_bytes = 11;
+  repeated MemoryRegion memory_regions = 12;
+
+  // Storage
+  uint64 nvme_bytes = 20;
+  uint64 hdd_bytes = 21;
+  string cache_path = 22;
+
+  // Network
+  NetworkInfo network = 30;
+
+  // TEE
+  TEECapabilities tee = 40;
+
+  // Power/thermal
+  PowerProfile power = 50;
+}
+
+message ComputeDevice {
+  enum Type { UNKNOWN = 0; CUDA = 1; ROCM = 2; METAL = 3; OPENCL = 4; CPU = 5; NPU = 6; WASM = 7; }
+  Type type = 1;
+  string name = 2;                       // "NVIDIA RTX 4090", "Apple M3 Max"
+  uint32 compute_units = 3;              // SMs / CUs / cores
+  uint64 vram_bytes = 4;                 // Dedicated VRAM
+  uint64 shared_mem_bytes = 5;           // Unified/Shared memory
+  repeated string supported_precisions = 6; // "fp32", "fp16", "bf16", "fp8", "int8", "int4"
+  double tflops_fp16 = 7;                // Theoretical peak
+  double tflops_int8 = 8;
+  string driver_version = 9;
+  uint32 pcie_gen = 10;
+  uint32 pcie_lanes = 11;
+}
+
+message MemoryRegion {
+  enum Type { SYSTEM = 0; VRAM = 1; UNIFIED = 2; HBM = 3; }
+  Type type = 1;
+  uint64 size_bytes = 2;
+  uint64 bandwidth_gbps = 3;
+  uint32 latency_ns = 4;
+}
+
+message NetworkInfo {
+  enum NATType { UNKNOWN = 0; FULL_CONE = 1; RESTRICTED_CONE = 2; PORT_RESTRICTED = 3; SYMMETRIC = 4; }
+  NATType nat_type = 1;
+  string public_ip = 2;
+  uint32 public_port = 3;
+  repeated string relay_peers = 4;       // Preferred relay peer IDs
+  double bandwidth_mbps_up = 5;
+  double bandwidth_mbps_down = 6;
+  uint32 latency_ms_to_coordinators = 7; // Median RTT to known coordinators
+}
+
+message TEECapabilities {
+  bool available = 1;
+  repeated string types = 2;             // "sgx", "tdx", "sev-snp", "trustzone", "secure_enclave"
+  uint64 max_enclave_size_bytes = 3;
+  bool remote_attestation = 4;
+  bool sealing = 5;
+  bool key_derivation = 6;
+}
+
+message PowerProfile {
+  double max_power_watts = 1;
+  double idle_power_watts = 2;
+  bool thermal_throttling = 3;
+  uint32 max_temp_celsius = 4;
+}
+
+message WorkerStatus {
+  enum State { UNKNOWN = 0; ONLINE = 1; OFFLINE = 2; BUSY = 3; MAINTENANCE = 4; JAILED = 5; }
+  State state = 1;
+  string current_task_id = 2;
+  uint32 active_shards = 3;
+  ResourceUsage usage = 4;
+  uint64 last_heartbeat = 5;
+  uint64 uptime_seconds = 6;
+}
+
+message ResourceUsage {
+  double vram_percent = 1;
+  double compute_percent = 2;
+  double system_ram_percent = 3;
+  double network_mbps_up = 4;
+  double network_mbps_down = 5;
+  double temperature_celsius = 6;
+  double power_watts = 7;
+}
+
+message ReputationScore {
+  double quality_score = 1;              // 0.0 - 1.0 (correctness via challenges)
+  double uptime_score = 2;               // 0.0 - 1.0
+  double latency_score = 3;              // 0.0 - 1.0 (relative to median)
+  uint64 total_tasks_completed = 4;
+  uint64 tasks_failed = 5;
+  uint64 slashing_events = 6;
+  uint64 last_updated = 7;
+}
+
+message StakeInfo {
+  string worker_address = 1;
+  string delegated_address = 2;          // If delegated
+  uint64 self_stake = 3;                 // Base units (18 decimals)
+  uint64 delegated_stake = 4;
+  uint64 total_stake = 5;
+  uint64 locked_until = 6;               // Unbonding period end
+}
+
+// ============================================================
+// Model Registry
+// ============================================================
+
+message ModelManifest {
+  string model_id = 1;
+  string version = 2;
+  string architecture = 3;               // "llama", "mistral", "mixtral", "gemma", "qwen"
+  uint64 total_params = 4;
+  repeated ShardManifest shards = 5;
+  PipelineConfig pipeline = 6;
+  QuantizationConfig quantization = 7;
+  map<string, string> metadata = 8;      // license, author, huggingface_repo, etc.
+}
+
+message ShardManifest {
+  string shard_id = 1;
+  repeated uint32 layers = 2;            // Layer indices [start, end)
+  string hash = 3;                       // "sha256:abc123..."
+  uint64 size_bytes = 4;
+  QuantizationType quantization = 5;
+  uint32 min_vram_gb = 6;
+  repeated string supported_backends = 7; // "cuda", "metal", "rocm", "cpu", "wasm"
+  repeated TensorInfo tensors = 8;       // Individual tensor metadata
+}
+
+message TensorInfo {
+  string name = 1;
+  repeated uint64 shape = 2;
+  DataType dtype = 3;
+  uint64 size_bytes = 4;
+  string hash = 5;                       // For verification
+}
+
+enum QuantizationType {
+  QUANT_NONE = 0;
+  QUANT_FP16 = 1;
+  QUANT_BF16 = 2;
+  QUANT_FP8 = 3;
+  QUANT_INT8 = 4;
+  QUANT_INT4 = 5;
+  QUANT_GPTQ = 6;
+  QUANT_AWQ = 7;
+  QUANT_GGUF_Q4_0 = 8;
+  QUANT_GGUF_Q4_K_M = 9;
+  QUANT_GGUF_Q5_K_M = 10;
+  QUANT_GGUF_Q8_0 = 11;
+}
+
+enum DataType {
+  TYPE_FP32 = 0;
+  TYPE_FP16 = 1;
+  TYPE_BF16 = 2;
+  TYPE_FP8_E4M3 = 3;
+  TYPE_FP8_E5M2 = 4;
+  TYPE_INT8 = 5;
+  TYPE_INT4 = 6;
+  TYPE_UINT8 = 7;
+}
+
+message PipelineConfig {
+  uint32 num_stages = 1;
+  repeated uint32 stage_layers = 2;      // Layers per stage
+  double kv_cache_per_token_kb = 3;
+  bool supports_tensor_parallel = 4;
+  bool supports_expert_parallel = 5;
+  uint32 max_sequence_length = 6;
+}
+
+message QuantizationConfig {
+  QuantizationType default_quant = 1;
+  map<string, QuantizationType> per_layer = 2; // layer_name -> quant
+  bool dynamic_quantization = 3;         // Supports runtime quant selection
+}
+
+// ============================================================
+// Task Protocol
+// ============================================================
+
+message InferenceRequest {
+  string request_id = 1;
+  string model_id = 2;
+  string version = 3;                    // Empty = latest
+  Prompt prompt = 4;
+  GenerationConfig config = 5;
+  Priority priority = 6;
+  map<string, string> metadata = 7;
+}
+
+message Prompt {
+  oneof content {
+    string text = 1;
+    ChatMessage messages = 2;
+    bytes token_ids = 3;                 // Pre-tokenized (for advanced users)
+  }
+}
+
+message ChatMessage {
+  enum Role { SYSTEM = 0; USER = 1; ASSISTANT = 2; TOOL = 3; }
+  Role role = 1;
+  string content = 2;
+  string tool_call_id = 3;               // For tool messages
+}
+
+message GenerationConfig {
+  uint32 max_tokens = 1;
+  float temperature = 2;
+  float top_p = 3;
+  uint32 top_k = 4;
+  float repetition_penalty = 5;
+  repeated uint32 stop_token_ids = 6;
+  bool stream = 7;
+  bool return_logprobs = 8;
+  uint32 logprobs_top_k = 9;
+  SpeculativeConfig speculative = 10;
+}
+
+message SpeculativeConfig {
+  bool enabled = 1;
+  string draft_model_id = 2;
+  uint32 num_draft_tokens = 3;
+  float acceptance_threshold = 4;
+}
+
+enum Priority {
+  LOW = 0;
+  NORMAL = 1;
+  HIGH = 2;
+  CRITICAL = 3;
+}
+
+message TaskAssignment {
+  string task_id = 1;
+  string request_id = 2;
+  string model_id = 3;
+  string model_version = 4;
+  repeated ShardAssignment shards = 5;
+  ExecutionPlan plan = 6;
+  uint64 deadline = 7;                   // Unix timestamp
+  bytes session_key = 8;                 // Encrypted for worker (TEE-derived)
+  bytes input_payload = 9;               // Encrypted prompt tokens
+}
+
+message ShardAssignment {
+  string shard_id = 1;
+  string worker_peer_id = 2;
+  uint32 stage_index = 3;                // Pipeline stage
+  uint32 tensor_parallel_rank = 4;       // For tensor parallelism
+  uint32 expert_parallel_rank = 5;       // For expert parallelism
+  bytes manifest_hash = 6;               // Verify correct shard
+  KVCacheConfig kv_config = 7;
+}
+
+message KVCacheConfig {
+  bool is_first_stage = 1;
+  bool is_last_stage = 2;
+  string prev_worker_peer_id = 3;        // For KV receive
+  string next_worker_peer_id = 4;        // For KV send
+  CompressionConfig compression = 5;
+}
+
+message CompressionConfig {
+  enum Type { NONE = 0; INT8 = 1; FP8 = 2; KIVI = 3; H2O = 4; SNAPKV = 5; LOW_RANK = 6; }
+  Type type = 1;
+  map<string, string> params = 2;        // Algorithm-specific params
+}
+
+message ExecutionPlan {
+  enum Strategy { PIPELINE = 0; TENSOR = 1; EXPERT = 2; SPECULATIVE = 3; HYBRID = 4; }
+  Strategy strategy = 1;
+  repeated PipelineStage stages = 2;
+  double estimated_latency_ms = 3;
+  double estimated_cost_tokens = 4;
+}
+
+message PipelineStage {
+  uint32 stage_index = 1;
+  repeated string shard_ids = 2;
+  repeated string worker_peer_ids = 3;
+  uint32 micro_batch_size = 4;
+  bool overlaps_with_next = 5;
+}
+
+// ============================================================
+// Execution Results
+// ============================================================
+
+message ExecutionResult {
+  string task_id = 1;
+  string worker_peer_id = 2;
+  string shard_id = 3;
+  bool success = 4;
+  bytes output_payload = 5;              // Encrypted output tokens / KV cache
+  ResourceUsage usage = 6;
+  uint64 execution_time_ms = 7;
+  bytes zk_proof = 8;                    // ZK proof of correct execution
+  bytes tee_quote = 9;                   // TEE attestation quote
+  string error = 10;                     // If !success
+}
+
+message InferenceResponse {
+  string request_id = 1;
+  string task_id = 2;
+  enum Status { PENDING = 0; RUNNING = 1; COMPLETED = 2; FAILED = 3; }
+  Status status = 3;
+  repeated TokenChunk chunks = 4;        // For streaming
+  GenerationStats stats = 5;
+  string error = 6;
+}
+
+message TokenChunk {
+  uint32 token_id = 1;
+  string text = 2;
+  float logprob = 3;
+  bool is_final = 4;
+}
+
+message GenerationStats {
+  uint32 prompt_tokens = 1;
+  uint32 completion_tokens = 2;
+  double ttft_ms = 3;                    // Time to first token
+  double tpot_ms = 4;                    // Time per output token
+  double total_time_ms = 5;
+  uint64 flops = 6;
+}
+
+// ============================================================
+// Worker Registry Protocol
+// ============================================================
+
+message RegisterWorkerRequest {
+  HardwareIdentity identity = 1;
+  DeviceCapabilities capabilities = 2;
+  StakeInfo stake = 3;
+  string metadata_json = 4;              // Optional: operator info, location, etc.
+}
+
+message RegisterWorkerResponse {
+  bool accepted = 1;
+  string worker_id = 2;                  // Assigned internal ID
+  uint64 epoch = 3;                      // Current network epoch
+  repeated string bootstrap_peers = 4;   // Coordinator peer IDs
+  string error = 5;
+}
+
+message HeartbeatRequest {
+  string worker_id = 1;
+  WorkerStatus status = 2;
+  bytes signature = 3;                   // Signed by worker identity key
+}
+
+message HeartbeatResponse {
+  bool acknowledged = 1;
+  uint64 server_time = 2;
+  repeated ConfigUpdate config_updates = 3;
+  repeated string tasks_to_pull = 4;     // Task IDs assigned to this worker
+}
+
+message ConfigUpdate {
+  enum Type { MODEL_UPDATE = 0; NETWORK_PARAMS = 1; REWARD_RATES = 2; SLASHING_PARAMS = 3; }
+  Type type = 1;
+  bytes payload = 2;                     // Serialized config proto
+  uint64 effective_epoch = 3;
+}
+
+// ============================================================
+// Model Registry Protocol
+// ============================================================
+
+message GetManifestRequest {
+  string model_id = 1;
+  string version = 2;                    // Empty = latest
+}
+
+message GetManifestResponse {
+  ModelManifest manifest = 1;
+  repeated ChunkInfo chunks = 2;         // For downloading shard files
+}
+
+message ChunkInfo {
+  string shard_id = 1;
+  uint32 chunk_index = 2;
+  uint64 offset = 3;
+  uint64 size = 4;
+  string hash = 5;
+  repeated string cid = 6;               // IPFS CIDs
+  repeated string http_mirrors = 7;      // CDN mirrors
+}
+
+message ListModelsRequest {
+  uint32 page = 1;
+  uint32 page_size = 2;
+  string architecture_filter = 3;
+  uint64 min_params = 4;
+  uint64 max_params = 5;
+}
+
+message ListModelsResponse {
+  repeated ModelSummary models = 1;
+  uint32 total = 2;
+}
+
+message ModelSummary {
+  string model_id = 1;
+  string latest_version = 2;
+  string architecture = 3;
+  uint64 total_params = 4;
+  repeated QuantizationType available_quants = 5;
+  double estimated_cost_per_1k_tokens = 6;
+  bool is_active = 7;
+}
+
+// ============================================================
+// Settlement Protocol
+// ============================================================
+
+message SubmitResultRequest {
+  string task_id = 1;
+  string worker_peer_id = 2;
+  ExecutionResult result = 3;
+  bytes worker_signature = 4;            // Signed over result hash
+}
+
+message SubmitResultResponse {
+  bool accepted = 1;
+  uint64 reward_amount = 2;              // Base units
+  string settlement_tx_hash = 3;         // If on-chain
+  string error = 4;
+}
+
+message ChallengeRequest {
+  string task_id = 1;
+  string challenger_peer_id = 2;
+  bytes challenge_data = 3;              // Random seed for re-execution
+}
+
+message ChallengeResponse {
+  bool valid = 1;
+  ExecutionResult re_execution = 2;
+  bytes zk_proof = 3;
+}
+
+message SlashRequest {
+  string worker_peer_id = 1;
+  SlashReason reason = 2;
+  bytes evidence = 3;                    // ZK proof, TEE quote, etc.
+}
+
+enum SlashReason {
+  UNKNOWN = 0;
+  FAILED_ATTESTATION = 1;
+  INCORRECT_OUTPUT = 2;
+  ZK_PROOF_INVALID = 3;
+  EXTENDED_DOWNTIME = 4;
+  CENSORSHIP = 5;
+  DOUBLE_SIGNING = 6;
+}
+
+// ============================================================
+// P2P Messages (GossipSub topics)
+// ============================================================
+
+// Topic: /nexus/heartbeats/{region}
+message HeartbeatGossip {
+  string worker_id = 1;
+  WorkerStatus status = 2;
+  uint64 timestamp = 3;
+}
+
+// Topic: /nexus/tasks/available
+message TaskAnnouncement {
+  string task_id = 1;
+  string model_id = 2;
+  Priority priority = 3;
+  uint64 deadline = 4;
+  repeated string eligible_workers = 5;  // Empty = all
+}
+
+// Topic: /nexus/reshard/{task_id}
+message ReshardCommand {
+  string task_id = 1;
+  ExecutionPlan new_plan = 2;
+  uint64 effective_at = 3;               // Unix timestamp
+  bytes coordinator_signature = 4;
+}
+
+// Topic: /nexus/settlement/epoch/{epoch}
+message EpochSettlement {
+  uint64 epoch = 1;
+  repeated WorkerReward rewards = 2;
+  repeated SlashRecord slashes = 3;
+  string merkle_root = 4;                // For verification
+}
+
+message WorkerReward {
+  string worker_peer_id = 1;
+  uint64 amount = 2;
+  double quality_multiplier = 3;
+}
+
+message SlashRecord {
+  string worker_peer_id = 1;
+  SlashReason reason = 2;
+  uint64 amount = 3;
+  bytes evidence_hash = 4;
+}
+
+// ============================================================
+// Coordinator Messages
+// ============================================================
+
+message CoordinatorAnnouncement {
+  string peer_id = 1;
+  string region = 2;
+  NetworkInfo network = 3;
+  uint64 stake = 4;
+  repeated string supported_models = 5;
+  uint64 timestamp = 6;
+  bytes signature = 7;
+}
+
+message KVCacheTransfer {
+  string from_worker = 1;
+  string to_worker = 2;
+  string task_id = 3;
+  uint32 stage_index = 4;
+  bytes kv_cache = 5;                    // Compressed KV tensors
+  CompressionConfig compression = 6;
+  uint64 sequence_number = 7;            // For ordering
+}
+
+message PipelineSignal {
+  enum Type { READY = 0; START = 1; PAUSE = 2; RESUME = 3; CHECKPOINT = 4; ABORT = 5; }
+  Type type = 1;
+  string task_id = 2;
+  uint32 stage_index = 3;
+  bytes payload = 4;                     // Stage-specific data
+}
+
+// ============================================================
+// Observability
+// ============================================================
+
+message MetricsBatch {
+  string worker_id = 1;
+  uint64 timestamp = 2;
+  repeated MetricPoint metrics = 3;
+}
+
+message MetricPoint {
+  string name = 1;
+  double value = 2;
+  map<string, string> labels = 3;
+}
+
+message TraceSpan {
+  string trace_id = 1;
+  string span_id = 2;
+  string parent_span_id = 3;
+  string operation_name = 4;
+  uint64 start_time_ns = 5;
+  uint64 duration_ns = 6;
+  map<string, string> tags = 7;
+  repeated LogEvent logs = 8;
+  SpanStatus status = 9;
+}
+
+message LogEvent {
+  uint64 timestamp_ns = 1;
+  string message = 2;
+  map<string, string> fields = 3;
+}
+
+enum SpanStatus {
+  OK = 0;
+  ERROR = 1;
+  TIMEOUT = 2;
+  CANCELLED = 3;
+}

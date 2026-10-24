@@ -1,0 +1,69 @@
+NexusLLM Distributed LLM Compute Platform
+==========================================
+
+Attribution Notice
+------------------
+
+This software includes the NexusLLM Distributed LLM Compute Platform,
+licensed under the NexusLLM License v1.0.
+
+Copyright (c) 2026 NexusLLM Contributors
+
+Required Attribution
+--------------------
+
+"Powered by NexusLLM — https://nexusllm.network"
+
+This attribution must be displayed in:
+- Source code distributions (in LICENSE file)
+- Binary distributions (CLI --version, About dialog, API /version endpoint)
+- Documentation and marketing materials
+- Any derived works
+
+Third-Party Components
+----------------------
+
+This software bundles or depends on the following third-party components,
+each with their own licenses:
+
+Core Dependencies:
+• Rust standard library — MIT OR Apache-2.0
+• Tokio async runtime — MIT
+• libp2p networking — MIT
+• Candle ML framework — Apache-2.0
+• ed25519-dalek — MIT OR Apache-2.0
+• prost/protobuf — Apache-2.0
+• Serde serialization — MIT OR Apache-2.0
+• Tracing/observability — MIT
+• Metrics/Prometheus — Apache-2.0
+• Figment configuration — MIT OR Apache-2.0
+• Clap CLI parsing — MIT OR Apache-2.0
+
+Optional/Conditional:
+• CUDA/cuDNN — NVIDIA EULA (when CUDA feature enabled)
+• Metal/MLX — Apple license (when Metal feature enabled, macOS only)
+• SGX SDK — Intel license (when SGX feature enabled)
+• llama.cpp/ggml — MIT (when llama-cpp feature enabled)
+• ONNX Runtime — MIT (when ORT feature enabled)
+
+Infrastructure:
+• Docker images — Apache-2.0 (base images)
+• Helm charts — Apache-2.0
+• Prometheus/Grafana — Apache-2.0
+• PostgreSQL — PostgreSQL License
+• Redis — BSD-3-Clause
+• Jaeger — Apache-2.0
+
+License Compliance
+------------------
+
+• All MIT/Apache-2.0 dependencies are compatible with the NexusLLM License
+• Commercial users must ensure downstream compliance with all dependency licenses
+• Patent grants from contributors cover essential patent claims
+• See LICENSE file for full NexusLLM License terms
+
+SPDX
+----
+
+SPDX-License-Identifier: LicenseRef-NexusLLM-1.0
+SPDX-License-Identifier: (MIT OR Apache-2.0)  (for third-party deps)

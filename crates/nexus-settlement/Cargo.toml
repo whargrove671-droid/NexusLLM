@@ -1,0 +1,35 @@
+[package]
+name = "nexus-settlement"
+version = "0.1.0"
+edition = "2021"
+description = "Settlement engine for NexusLLM (on-chain + off-chain)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusllm/nexusllm"
+
+[dependencies]
+nexus-common = { path = "../nexus-common" }
+nexus-proto = { path = "../nexus-proto" }
+
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+alloy = { version = "0.3", features = ["full", "reqwest", "transport-http"], optional = true }
+# solana-sdk = { version = "1.18", optional = true }
+# solana-client = { version = "1.18", optional = true }
+ark-groth16 = { version = "0.4", optional = true }
+ark-bn254 = { version = "0.4", optional = true }
+
+[features]
+default = []
+ethereum = ["alloy"]
+# solana = ["solana-sdk", "solana-client"]
+zk = ["ark-groth16", "ark-bn254"]
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+proptest = { workspace = true }

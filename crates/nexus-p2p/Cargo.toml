@@ -1,0 +1,32 @@
+[package]
+name = "nexus-p2p"
+version = "0.1.0"
+edition = "2021"
+description = "P2P networking layer for NexusLLM (libp2p + WebRTC)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusllm/nexusllm"
+
+[dependencies]
+nexus-common = { path = "../nexus-common" }
+nexus-proto = { path = "../nexus-proto" }
+
+tokio = { workspace = true }
+libp2p = { workspace = true }
+tokio-tungstenite = { workspace = true }
+quinn = { workspace = true }
+rustls = { workspace = true }
+rcgen = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+async-trait = { workspace = true }
+bytes = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+tempfile = { workspace = true }

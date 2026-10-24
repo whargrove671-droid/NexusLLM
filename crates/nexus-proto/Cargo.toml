@@ -1,0 +1,20 @@
+[package]
+name = "nexus-proto"
+version = "0.1.0"
+edition = "2021"
+description = "Protobuf definitions for NexusLLM"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nexusllm/nexusllm"
+build = "build.rs"
+
+[dependencies]
+prost = { workspace = true }
+prost-types = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+
+[build-dependencies]
+prost-build = { workspace = true }
+
+[features]
+default = []
