@@ -3,8 +3,8 @@ name = "nexus-p2p"
 version = "0.1.0"
 edition = "2021"
 description = "P2P networking layer for NexusLLM (libp2p + WebRTC)"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/nexusllm/nexusllm"
+license = "LicenseRef-NexusLLM-1.0"
+repository = "https://github.com/whargrove671-droid/NexusLLM"
 
 [dependencies]
 nexus-common = { path = "../nexus-common" }

@@ -3,8 +3,8 @@ name = "nexus-tee"
 version = "0.1.0"
 edition = "2021"
 description = "TEE abstraction layer for NexusLLM (SGX, SEV, TrustZone, Secure Enclave)"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/nexusllm/nexusllm"
+license = "LicenseRef-NexusLLM-1.0"
+repository = "https://github.com/whargrove671-droid/NexusLLM"
 
 [dependencies]
 nexus-common = { path = "../nexus-common" }
@@ -18,9 +18,15 @@ tracing = { workspace = true }
 zeroize = { workspace = true }
 
 # Platform-specific TEE libraries
+# NOTE: `sgx-types` / `sgx-urts` (1.1) are unmaintained (2019) and will not
+# compile on modern Rust.  When implementing real SGX support, prefer one of:
+#   - fortanix-sgx-abi / fortanix-sgx-sdk
+#   - intel-sgx-abi / the official Intel sgx-sdk Rust wrappers
+#   - A pure-quote / DCAP interface behind an FFI boundary
+# Stubs are left here so the crate compiles on non-SGX targets with `--no-default-features`.
 sgx-types = { workspace = true, package = "sgx_types", optional = true }
 sgx-urts = { workspace = true, package = "sgx_urts", optional = true }
-# sev-rs = { version = "0.1", optional = true }
+# sev-rs = { version = "0.1", optional = true }  # unblock when crate is published
 
 [features]
 default = []

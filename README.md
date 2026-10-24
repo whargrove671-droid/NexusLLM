@@ -1,5 +1,9 @@
 # NexusLLM Distributed LLM Compute Platform
 
+> **⚠️ Design-stage prototype — this repository is an architecture scaffold, not a shipped product.**
+> The Rust workspace compiles partially; several crates contain skeleton implementations awaiting full development.
+> See [DOCUMENTATION.md](DOCUMENTATION.md) for the complete technical specification and [CONTRIBUTING.md](CONTRIBUTING.md) for how to help build it out.
+
 **Run any model. Powered by the world's idle compute.**
 
 NexusLLM transforms idle home desktops into a planetary-scale inference fabric. Install the app, pick any model, and it runs automatically on the distributed network — no infrastructure required.

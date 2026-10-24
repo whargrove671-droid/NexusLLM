@@ -3,8 +3,8 @@ name = "nexus-executor"
 version = "0.1.0"
 edition = "2021"
 description = "Shard Executor trait and backends for NexusLLM"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/nexusllm/nexusllm"
+license = "LicenseRef-NexusLLM-1.0"
+repository = "https://github.com/whargrove671-droid/NexusLLM"
 
 [dependencies]
 nexus-common = { path = "../nexus-common" }
