@@ -24,8 +24,8 @@ zeroize = { workspace = true }
 #   - intel-sgx-abi / the official Intel sgx-sdk Rust wrappers
 #   - A pure-quote / DCAP interface behind an FFI boundary
 # Stubs are left here so the crate compiles on non-SGX targets with `--no-default-features`.
-sgx-types = { workspace = true, package = "sgx_types", optional = true }
-sgx-urts = { workspace = true, package = "sgx_urts", optional = true }
+sgx-types = { version = "1.1", package = "sgx_types", optional = true }
+sgx-urts = { version = "1.1", package = "sgx_urts", optional = true }
 # sev-rs = { version = "0.1", optional = true }  # unblock when crate is published
 
 [features]
